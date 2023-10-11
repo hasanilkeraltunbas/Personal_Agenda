@@ -1,6 +1,5 @@
 from datetime import datetime
 
-
 # Üst Sınıf (Superclass)
 class Animsaticilar:
     def __init__(self, kisi_veya_kurum, yer, gun, saat):
@@ -14,28 +13,26 @@ class Animsaticilar:
 
     def tarih(self):
         try:
-            # Tarihi yıl, ay ve gün olarak bölüp sıralamak için kullanın
             tarih_obj = datetime.strptime(self.gun, "%d/%m/%Y")
             return tarih_obj
         except (ValueError, TypeError):
-            return datetime.max  # Geçerli bir tarih yoksa, en büyük tarihi kullan
-
+            return datetime.max
 
 # Alt Sınıf (Subclass)
 class KullaniciGirisi(Animsaticilar):
     def __init__(self):
-        self.girisler = []  # Tüm girişleri saklamak için bir liste oluşturun
+        super().__init__("Boş", "Boş", "01/01/1900", "00:00")  # Superclass'ın __init__ metodunu çağırarak giriş listesi oluşturun
+        self.girisler = []
+        self.giris_id_counter = 0  # Her girişin kendine ait bir ID'si olsun
 
     def tarih_gir(self):
-        gun = int(input("Gün: "))  # Günü tamsayıya çevirin
-        ay = int(input("Ay: "))  # Ayı tamsayıya çevirin
-        yil = int(input("Yıl: "))  # Yılı tamsayıya çevirin
+        gun = int(input("Gün: "))
+        ay = int(input("Ay: "))
+        yil = int(input("Yıl: "))
 
-        # Kullanıcının girdiği tarih bilgisini otomatik olarak formatlayın
         tarih_str = f"{gun:02d}/{ay:02d}/{yil:04d}"
 
         try:
-            # Kullanıcının girdiği tarihi datetime nesnesine çevirin
             tarih_obj = datetime.strptime(tarih_str, "%d/%m/%Y")
         except ValueError:
             print("Geçersiz tarih formatı. Lütfen 'Gün Ay Yıl' formatında girin.")
@@ -47,30 +44,65 @@ class KullaniciGirisi(Animsaticilar):
 
         giris = Animsaticilar(kisi_veya_kurum, yer, tarih_obj.strftime("%d/%m/%Y"), saat)
         self.girisler.append(giris)
+        self.giris_id_counter += 1
 
     def olay_sil(self, kisi=None, gun=None):
-        # Olay silme işlemini güncelleyin (isteğe bağlı)
-        pass
+        if kisi is not None:
+            girisler = [giris for giris in self.girisler if kisi != giris.kisi_veya_kurum]
+        elif gun is not None:
+            girisler = [giris for giris in self.girisler if gun != giris.gun]
+        else:
+            print("Lütfen silmek istediğiniz olayın adını veya tarihini girin.")
+            return
+
+        if len(girisler) == len(self.girisler):
+            print("Bu olay bulunamadı.")
+        else:
+            self.girisler = girisler
+            print("Olay başarıyla silindi.")
 
     def info(self):
-        # Hatırlatıcıları tarihe göre sıralayın
         sirali_girisler = sorted(self.girisler, key=lambda x: x.tarih() or datetime.max)
 
         print("Hatırlatıcılar:")
-        for giris in sirali_girisler:
-            print("- " + giris.info())
+        for index, giris in enumerate(sirali_girisler):
+            print(f"{index}. {giris.info()}")
 
+    def olay_duzenle(self):
+        try:
+            giris_id = int(input("Düzenlemek istediğiniz girişin ID'sini giriniz: "))
+            if giris_id < len(self.girisler):
+                giris = self.girisler[giris_id]
+                kisi_veya_kurum = input("Kişi veya Kurum: ")
+                yer = input("Yer: ")
+                tarih = input("Tarih (Gün Ay Yıl): ")
+                saat = input("Saat: ")
+                aciklama = input("Açıklama: ")
+
+                giris.kisi_veya_kurum = kisi_veya_kurum
+                giris.yer = yer
+                giris.gun = tarih
+                giris.saat = saat
+                giris.aciklama = aciklama
+
+                print("Olay başarıyla güncellendi.")
+            else:
+                print("Geçersiz giriş ID'si.")
+        except ValueError:
+            print("Geçersiz giriş ID'si.")
 
 # Ana program
 print("Kişisel Ajandam")
-kullanici_giris = KullaniciGirisi()  # KullaniciGirisi nesnesini başlangıçta oluşturun
+kullanici_giris = KullaniciGirisi()
 
 while True:
     print("Yapabileceğiniz işlemler: ")
     print("1. Olay Girişi Yap")
     print("2. Olay Sil (Kişi veya Tarih ile silme)")
     print("3. Olayları Göster")
-    print("4. Çıkış için 'q' yazınız.")
+    print("4. Olay Düzenle")
+    print("5. Çıkış için 'q' yazınız.")
+
     secim = input("Hangi işlemi yapmak istiyorsunuz? : ")
 
     if secim.lower() == 'q':
@@ -83,11 +115,10 @@ while True:
         kisi_sil = input("Silmek istediğiniz kişi veya kurumu giriniz: ")
         tarih_sil = input("Silmek istediğiniz tarihi (Gün Ay Yıl) giriniz: ")
         kullanici_giris.olay_sil(kisi_sil, tarih_sil)
-        print("Olay bilgileri silindi.")
 
     elif secim == "3":
         kullanici_giris.info()
 
-    # To do in to do list:
-    # inputs will be changeable and the date will be formatted automatically
-    # search would be fine even with a single word
+    elif secim == "4":
+        kullanici_giris.olay_duzenle()
+
