@@ -1,124 +1,135 @@
+import re
 from datetime import datetime
 
-# Üst Sınıf (Superclass)
-class Animsaticilar:
-    def __init__(self, kisi_veya_kurum, yer, gun, saat):
-        self.kisi_veya_kurum = kisi_veya_kurum
-        self.yer = yer
-        self.gun = gun
-        self.saat = saat
+# Superclass
+class Reminders:
+    def __init__(self, person_or_organization, location, date, time):
+        self.person_or_organization = person_or_organization
+        self.location = location
+        self.date = date
+        self.time = time
 
     def info(self):
-        return f"{self.kisi_veya_kurum}, {self.yer}, {self.gun}, {self.saat}"
+        return f"{self.person_or_organization}, {self.location}, {self.date}, {self.time}"
 
-    def tarih(self):
+    def date_parsed(self):
         try:
-            tarih_obj = datetime.strptime(self.gun, "%d/%m/%Y")
-            return tarih_obj
+            date_obj = datetime.strptime(self.date, "%d/%m/%Y")
+            return date_obj
         except (ValueError, TypeError):
             return datetime.max
 
-# Alt Sınıf (Subclass)
-class KullaniciGirisi(Animsaticilar):
+# Subclass
+class UserEntry(Reminders):
     def __init__(self):
-        super().__init__("Boş", "Boş", "01/01/1900", "00:00")  # Superclass'ın __init__ metodunu çağırarak giriş listesi oluşturun
-        self.girisler = []
-        self.giris_id_counter = 0  # Her girişin kendine ait bir ID'si olsun
+        super().__init__("Empty", "Empty", "01/01/1900", "00:00")
+        self.entries = []
+        self.entry_id_counter = 0
 
-    def tarih_gir(self):
-        gun = int(input("Gün: "))
-        ay = int(input("Ay: "))
-        yil = int(input("Yıl: "))
+    def entry_date(self):
+        print("Please enter the date (e.g., '27 08 1993', '27-08-1993', '27.08.1993', '27_08_1993').")
+        date_entry = input("Date: ")
 
-        tarih_str = f"{gun:02d}/{ay:02d}/{yil:04d}"
+        # Define regular expressions to match various date formats
+        date_patterns = [
+            r'(\d{2})[ -./_](\d{2})[ -./_](\d{4})',
+            # Add more patterns for other formats as needed
+        ]
 
-        try:
-            tarih_obj = datetime.strptime(tarih_str, "%d/%m/%Y")
-        except ValueError:
-            print("Geçersiz tarih formatı. Lütfen 'Gün Ay Yıl' formatında girin.")
+        date_obj = None
+        for pattern in date_patterns:
+            match = re.match(pattern, date_entry)
+            if match:
+                day, month, year = match.groups()
+                date_str = f"{day}/{month}/{year}"
+                try:
+                    date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+                    break
+                except ValueError:
+                    pass
+
+        if date_obj is None:
+            print("Invalid date format. Please enter the date in a valid format.")
             return
 
-        saat = input("Saat: ")
-        kisi_veya_kurum = input("Kişi veya Kurum: ")
-        yer = input("Yer: ")
+        time = input("Time: ")
+        person_or_organization = input("Person or Organization: ")
+        location = input("Location: ")
 
-        giris = Animsaticilar(kisi_veya_kurum, yer, tarih_obj.strftime("%d/%m/%Y"), saat)
-        self.girisler.append(giris)
-        self.giris_id_counter += 1
+        entry = Reminders(person_or_organization, location, date_obj.strftime("%d/%m/%Y"), time)
+        self.entries.append(entry)
+        self.entry_id_counter += 1
+        print("Entry successfully saved!")
 
-    def olay_sil(self, kisi=None, gun=None):
-        if kisi is not None:
-            girisler = [giris for giris in self.girisler if kisi != giris.kisi_veya_kurum]
-        elif gun is not None:
-            girisler = [giris for giris in self.girisler if gun != giris.gun]
+    def delete_entry(self, person=None, date=None):
+        if person is not None:
+            entries = [entry for entry in self.entries if person != entry.person_or_organization]
+        elif date is not None:
+            entries = [entry for entry in self.entries if date != entry.date]
         else:
-            print("Lütfen silmek istediğiniz olayın adını veya tarihini girin.")
+            print("Please enter the name or date of the entry you want to delete.")
             return
 
-        if len(girisler) == len(self.girisler):
-            print("Bu olay bulunamadı.")
+        if len(entries) == len(self.entries):
+            print("This entry could not be found.")
         else:
-            self.girisler = girisler
-            print("Olay başarıyla silindi.")
+            self.entries = entries
+            print("Entry successfully deleted!")
 
     def info(self):
-        sirali_girisler = sorted(self.girisler, key=lambda x: x.tarih() or datetime.max)
+        sorted_entries = sorted(self.entries, key=lambda x: x.date_parsed() or datetime.max)
 
-        print("Hatırlatıcılar:")
-        for index, giris in enumerate(sirali_girisler):
-            print(f"{index}. {giris.info()}")
+        print("Recorded events:")
+        for index, entry in enumerate(sorted_entries):
+            print(f"{index}. {entry.info()}")
 
-    def olay_duzenle(self):
+    def edit_entry(self):
         try:
-            giris_id = int(input("Düzenlemek istediğiniz girişin ID'sini giriniz: "))
-            if giris_id < len(self.girisler):
-                giris = self.girisler[giris_id]
-                kisi_veya_kurum = input("Kişi veya Kurum: ")
-                yer = input("Yer: ")
-                tarih = input("Tarih (Gün Ay Yıl): ")
-                saat = input("Saat: ")
-                aciklama = input("Açıklama: ")
+            entry_id = int(input("Enter the ID of the entry you want to edit: "))
+            if entry_id < len(self.entries):
+                entry = self.entries[entry_id]
+                person_or_organization = input("Person or Organization: ")
+                location = input("Location: ")
+                date = input("Date (Day Month Year): ")
+                time = input("Time: ")
 
-                giris.kisi_veya_kurum = kisi_veya_kurum
-                giris.yer = yer
-                giris.gun = tarih
-                giris.saat = saat
-                giris.aciklama = aciklama
-
-                print("Olay başarıyla güncellendi.")
+                entry.person_or_organization = person_or_organization
+                entry.location = location
+                entry.date = date
+                entry.time = time
+                print("Entry successfully updated!")
             else:
-                print("Geçersiz giriş ID'si.")
+                print("Invalid entry ID.")
         except ValueError:
-            print("Geçersiz giriş ID'si.")
+            print("Invalid entry ID.")
 
-# Ana program
-print("Kişisel Ajandam")
-kullanici_giris = KullaniciGirisi()
+# Main program
+print("Personal Agenda")
+user_entry = UserEntry()
 
 while True:
-    print("Yapabileceğiniz işlemler: ")
-    print("1. Olay Girişi Yap")
-    print("2. Olay Sil (Kişi veya Tarih ile silme)")
-    print("3. Olayları Göster")
-    print("4. Olay Düzenle")
-    print("5. Çıkış için 'q' yazınız.")
+    print("Available actions:")
+    print("1. Add an Entry")
+    print("2. Delete an Entry (by Person or Date)")
+    print("3. Show Entries")
+    print("4. Edit an Entry")
+    print("5. Type 'q' to exit.")
 
-    secim = input("Hangi işlemi yapmak istiyorsunuz? : ")
+    choice = input("What would you like to do? : ")
 
-    if secim.lower() == 'q':
+    if choice.lower() == 'q':
         break
 
-    if secim == "1":
-        kullanici_giris.tarih_gir()
+    if choice == "1":
+        user_entry.entry_date()
 
-    elif secim == "2":
-        kisi_sil = input("Silmek istediğiniz kişi veya kurumu giriniz: ")
-        tarih_sil = input("Silmek istediğiniz tarihi (Gün Ay Yıl) giriniz: ")
-        kullanici_giris.olay_sil(kisi_sil, tarih_sil)
+    elif choice == "2":
+        person_to_delete = input("Enter the name or organization you want to delete: ")
+        date_to_delete = input("Enter the date (Day Month Year) you want to delete: ")
+        user_entry.delete_entry(person_to_delete, date_to_delete)
 
-    elif secim == "3":
-        kullanici_giris.info()
+    elif choice == "3":
+        user_entry.info()
 
-    elif secim == "4":
-        kullanici_giris.olay_duzenle()
-
+    elif choice == "4":
+        user_entry.edit_entry()
